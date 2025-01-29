@@ -1,8 +1,3 @@
-/**
- ** client.c  -  a server program that uses the socket interface to tcp 
- **
- **/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
