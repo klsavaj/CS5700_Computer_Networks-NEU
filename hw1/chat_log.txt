@@ -1,0 +1,13 @@
+[2025-02-01 14:14:49] Client> hii there
+[2025-02-01 14:14:49] Server auto-reply: I got -> hii there
+[2025-02-01 14:14:58] Client> how are you?
+[2025-02-01 14:14:58] Server auto-reply: I got -> how are you?
+[2025-02-01 14:15:03] Client> x
+[2025-02-01 14:15:18] Server> i am good , what about you?
+[2025-02-01 14:15:29] Server> tell me about yourself
+[2025-02-01 14:16:00] Server> x
+[2025-02-01 14:16:17] Client> i am savaj bhai , doing network prpject
+[2025-02-01 14:16:17] Server auto-reply: I got -> i am savaj bhai , doing network prpject
+[2025-02-01 14:16:20] Client> xx
+[2025-02-01 14:19:35] Client> hii there
+[2025-02-01 14:19:35] Server auto-reply: I got -> hii there

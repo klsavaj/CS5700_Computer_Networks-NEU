@@ -106,21 +106,20 @@ void server(int server_number)
         exit(1);
     }
 
-    // ========== (H) Now the chat loop: the client writes first, so SERVER READS first ==========
+    // --- Chat Loop: Client writes first, so SERVER READS first ---
     while (1) {
         // ========== (1) SERVER READ PHASE ==========
         while (1) {
             int n = recv(client_fd, buffer, BUFSIZE, 0);
             if (n < 0) {
-                // ADDED FOR TASK #3 & #4
                 send_server_error(client_fd, "server.c:recv()");
-                perror("server recv");  // original code
+                perror("server recv");
                 close(client_fd);
                 close(fd);
                 exit(1);
             }
             if (n == 0) {
-                // client closed
+                // Client closed the connection.
                 fprintf(stderr, "Client disconnected.\n");
                 close(client_fd);
                 close(fd);
@@ -129,36 +128,31 @@ void server(int server_number)
 
             buffer[n] = '\0';
             fprintf(stdout, "Client> %s", buffer);
-            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
             log_message("Client>", buffer);
 
             if (strcmp(buffer, "xx\n") == 0) {
-                // client quits
+                // Client requests termination.
                 close(client_fd);
                 close(fd);
                 return;
             }
             else if (strcmp(buffer, "x\n") == 0) {
-                // yield
+                // Yield.
                 break;
             }
             else {
-                // ADDED FOR TASK #2 (Always reply):
-                // Send an immediate "auto reply" to every normal line
+                // Auto-reply to every normal message.
                 char ack[BUFSIZE+1];
-                snprintf(ack, sizeof(ack),
-                         "Server auto-reply: I got -> %s", buffer);
+                snprintf(ack, sizeof(ack), "I got -> %s", buffer);
 
                 int len_auto = strlen(ack);
                 if (send(client_fd, ack, len_auto, 0) < 0) {
-                    // ADDED FOR TASK #3 & #4
                     send_server_error(client_fd, "server.c:auto-reply send()");
                     perror("server send (auto-reply)");
                     close(client_fd);
                     close(fd);
                     exit(1);
                 }
-                /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
                 log_message("Server auto-reply:", ack);
             }
         }
@@ -170,12 +164,10 @@ void server(int server_number)
             if (fgets(buffer, BUFSIZE, stdin) == NULL) {
                 strcpy(buffer, "xx\n");
             }
-            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
             log_message("Server>", buffer);
 
             int len_to_send = strlen(buffer);
             if (send(client_fd, buffer, len_to_send, 0) < 0) {
-                // ADDED FOR TASK #3 & #4
                 send_server_error(client_fd, "server.c:send() in write phase");
                 perror("server send");
                 close(client_fd);
@@ -184,19 +176,19 @@ void server(int server_number)
             }
 
             if (strcmp(buffer, "xx\n") == 0) {
-                // server quits
+                // Server requests termination.
                 close(client_fd);
                 close(fd);
                 return;
             }
             else if (strcmp(buffer, "x\n") == 0) {
-                // yield
+                // Yield.
                 break;
             }
         }
     }
 
-    // close sockets if we ever exit the loop
+    // Close sockets if the loop ever exits.
     close(client_fd);
     close(fd);
 }

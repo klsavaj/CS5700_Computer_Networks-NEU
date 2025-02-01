@@ -6,28 +6,12 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include "client.h"
-#include <time.h>         /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+#include <time.h>         /* (Unused here; kept for consistency if needed) */
 
 extern char *inet_ntoa( struct in_addr );
 
 #define NAMESIZE        255
 #define BUFSIZE         81
-
-/* ADDED FOR CHAT HISTORY LOGGING FEATURE */
-static void log_message(const char *prefix, const char *msg)
-{
-    FILE *fp = fopen("chat_log.txt", "a");
-    if (!fp)
-        return;
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    char timestr[64];
-    strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", t);
-    fprintf(fp, "[%s] %s %s", timestr, prefix, msg);
-    if (msg[strlen(msg)-1] != '\n')
-        fprintf(fp, "\n");
-    fclose(fp);
-}
 
 void client(int server_number, char *server_node)
 {
@@ -38,60 +22,64 @@ void client(int server_number, char *server_node)
     char                  local_node[NAMESIZE];
     char                  buffer[BUFSIZE];
 
-    // (A) Get local host name
+    // (A) Get local host name.
     if (gethostname(local_node, NAMESIZE) < 0) {
         perror("client gethostname");
         exit(1);
     }
     fprintf(stderr, "client running on node %s\n", local_node);
 
-    // (B) If no server node specified, default to local node
+    // (B) If no server node specified, default to the local node.
     if (server_node == NULL)
         server_node = local_node;
     fprintf(stderr, "client about to connect to server at port number %d on node %s\n",
             server_number, server_node);
 
-    // (C) Resolve server_node to an IP address
+    // (C) Resolve server_node to an IP address.
     if ((node_ptr = gethostbyname(server_node)) == NULL) {
         perror("client gethostbyname");
         exit(1);
     }
 
-    // (D) Fill 'address' with server info: IP and port
+    // (D) Fill 'address' with server info: IP and port.
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     memcpy(&address.sin_addr, node_ptr->h_addr, node_ptr->h_length);
     address.sin_port = htons(server_number);
 
-    // (E) Create a TCP socket
+    // (E) Create a TCP socket.
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("client socket");
         exit(1);
     }
 
-    // (F) Connect the socket to the server's address
+    // (F) Connect the socket to the server's address.
     if (connect(fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("client connect");
         close(fd);
         exit(1);
     }
 
-    // ---- (G) Now the chat loop: half-duplex ----
+    /* ASCII Welcome Banner */
+    printf("\n");
+    printf("**********************************\n");
+    printf("*    Welcome SK's Server         *\n");
+    printf("**********************************\n");
+    printf("\n");
+
+    // --- Chat Loop: Half-duplex communication ---
     while (1) {
         // ========== (1) CLIENT WRITES PHASE ==========
         while (1) {
             fprintf(stdout, "You> ");
             fflush(stdout);
 
-            // Read from stdin
+            // Read from standard input.
             if (fgets(buffer, BUFSIZE, stdin) == NULL) {
-                // EOF => treat like "xx"
+                // Treat EOF like a termination command ("xx").
                 strcpy(buffer, "xx\n");
             }
-            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
-            log_message("You>", buffer);
 
-            // Send to server
             int len_to_send = strlen(buffer);
             if (send(fd, buffer, len_to_send, 0) < 0) {
                 perror("client send");
@@ -99,14 +87,14 @@ void client(int server_number, char *server_node)
                 exit(1);
             }
 
-            // Check special commands
+            // Check for special commands.
             if (strcmp(buffer, "xx\n") == 0) {
                 fprintf(stderr, "You typed 'xx'. Closing connection.\n");
                 close(fd);
                 return;
             }
             else if (strcmp(buffer, "x\n") == 0) {
-                // yield
+                // Yield.
                 break;
             }
         }
@@ -121,16 +109,14 @@ void client(int server_number, char *server_node)
                 exit(1);
             }
             if (n == 0) {
-                // server closed
+                // Server closed the connection.
                 fprintf(stderr, "Server disconnected.\n");
                 close(fd);
                 return;
             }
 
-            buffer[n] = '\0';  // make it a string
+            buffer[n] = '\0';  // Null-terminate the received string.
             fprintf(stdout, "Server> %s", buffer);
-            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
-            log_message("Server>", buffer);
 
             if (strcmp(buffer, "xx\n") == 0) {
                 fprintf(stderr, "Server sent 'xx'. Closing connection.\n");
@@ -138,12 +124,12 @@ void client(int server_number, char *server_node)
                 return;
             }
             else if (strcmp(buffer, "x\n") == 0) {
-                // server yielded
+                // Server yielded.
                 break;
             }
         }
     }
 
-    // (H) We normally never get here, but just in case:
+    // (H) Close the socket (normally never reached).
     close(fd);
 }
