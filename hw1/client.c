@@ -6,11 +6,28 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include "client.h"
+#include <time.h>         /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
 
 extern char *inet_ntoa( struct in_addr );
 
-#define NAMESIZE		255
-#define BUFSIZE			81
+#define NAMESIZE        255
+#define BUFSIZE         81
+
+/* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+static void log_message(const char *prefix, const char *msg)
+{
+    FILE *fp = fopen("chat_log.txt", "a");
+    if (!fp)
+        return;
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char timestr[64];
+    strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", t);
+    fprintf(fp, "[%s] %s %s", timestr, prefix, msg);
+    if (msg[strlen(msg)-1] != '\n')
+        fprintf(fp, "\n");
+    fclose(fp);
+}
 
 void client(int server_number, char *server_node)
 {
@@ -71,6 +88,8 @@ void client(int server_number, char *server_node)
                 // EOF => treat like "xx"
                 strcpy(buffer, "xx\n");
             }
+            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+            log_message("You>", buffer);
 
             // Send to server
             int len_to_send = strlen(buffer);
@@ -110,6 +129,8 @@ void client(int server_number, char *server_node)
 
             buffer[n] = '\0';  // make it a string
             fprintf(stdout, "Server> %s", buffer);
+            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+            log_message("Server>", buffer);
 
             if (strcmp(buffer, "xx\n") == 0) {
                 fprintf(stderr, "Server sent 'xx'. Closing connection.\n");

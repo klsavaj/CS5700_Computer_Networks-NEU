@@ -7,12 +7,29 @@
 #include <netinet/in.h>
 #include <errno.h>        // For strerror() and errno
 #include "server.h"
+#include <time.h>         /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
 
 extern char *inet_ntoa( struct in_addr );
 
 #define NAMESIZE        255
 #define BUFSIZE         81
 #define LISTENING_DEPTH 2
+
+/* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+static void log_message(const char *prefix, const char *msg)
+{
+    FILE *fp = fopen("chat_log.txt", "a");
+    if (!fp)
+        return;
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char timestr[64];
+    strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", t);
+    fprintf(fp, "[%s] %s %s", timestr, prefix, msg);
+    if (msg[strlen(msg)-1] != '\n')
+        fprintf(fp, "\n");
+    fclose(fp);
+}
 
 // ADDED FOR TASK #3 and #4: helper function to send error to client
 static void send_server_error(int client_fd, const char *file_context)
@@ -112,6 +129,8 @@ void server(int server_number)
 
             buffer[n] = '\0';
             fprintf(stdout, "Client> %s", buffer);
+            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+            log_message("Client>", buffer);
 
             if (strcmp(buffer, "xx\n") == 0) {
                 // client quits
@@ -139,6 +158,8 @@ void server(int server_number)
                     close(fd);
                     exit(1);
                 }
+                /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+                log_message("Server auto-reply:", ack);
             }
         }
 
@@ -149,6 +170,8 @@ void server(int server_number)
             if (fgets(buffer, BUFSIZE, stdin) == NULL) {
                 strcpy(buffer, "xx\n");
             }
+            /* ADDED FOR CHAT HISTORY LOGGING FEATURE */
+            log_message("Server>", buffer);
 
             int len_to_send = strlen(buffer);
             if (send(client_fd, buffer, len_to_send, 0) < 0) {
