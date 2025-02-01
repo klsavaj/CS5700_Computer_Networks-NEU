@@ -6,130 +6,112 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include "client.h"
-#include <time.h>         /* (Unused here; kept for consistency if needed) */
+#include <time.h>
 
-extern char *inet_ntoa( struct in_addr );
+extern char *inet_ntoa(struct in_addr);
 
-#define NAMESIZE        255
-#define BUFSIZE         81
+#define NAMESIZE 255
+#define BUFSIZE 81
 
 void client(int server_number, char *server_node)
 {
-    int                   len;
-    short                 fd;
-    struct sockaddr_in    address;
-    struct hostent       *node_ptr;
-    char                  local_node[NAMESIZE];
-    char                  buffer[BUFSIZE];
+    int len;
+    short fd;
+    struct sockaddr_in address;
+    struct hostent *node_ptr;
+    char local_node[NAMESIZE];
+    char buffer[BUFSIZE];
 
-    // (A) Get local host name.
+    // Get local host name
     if (gethostname(local_node, NAMESIZE) < 0) {
         perror("client gethostname");
         exit(1);
     }
     fprintf(stderr, "client running on node %s\n", local_node);
 
-    // (B) If no server node specified, default to the local node.
+    // Set server_node to local node if not specified
     if (server_node == NULL)
         server_node = local_node;
-    fprintf(stderr, "client about to connect to server at port number %d on node %s\n",
-            server_number, server_node);
+    fprintf(stderr, "client connecting to server at port %d on node %s\n", server_number, server_node);
 
-    // (C) Resolve server_node to an IP address.
+    // Resolve server address
     if ((node_ptr = gethostbyname(server_node)) == NULL) {
         perror("client gethostbyname");
         exit(1);
     }
 
-    // (D) Fill 'address' with server info: IP and port.
+    // Fill server address structure
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     memcpy(&address.sin_addr, node_ptr->h_addr, node_ptr->h_length);
     address.sin_port = htons(server_number);
 
-    // (E) Create a TCP socket.
+    // Create TCP socket
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("client socket");
         exit(1);
     }
 
-    // (F) Connect the socket to the server's address.
+    // Connect to the server
     if (connect(fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         perror("client connect");
         close(fd);
         exit(1);
     }
 
-    /* ASCII Welcome Banner */
+    // Display ASCII welcome banner
     printf("\n");
     printf("**********************************\n");
     printf("*    Welcome SK's Server         *\n");
     printf("**********************************\n");
     printf("\n");
 
-    // --- Chat Loop: Half-duplex communication ---
+    // Chat loop: Half-duplex communication
     while (1) {
-        // ========== (1) CLIENT WRITES PHASE ==========
+        // Write phase
         while (1) {
             fprintf(stdout, "You> ");
             fflush(stdout);
-
-            // Read from standard input.
-            if (fgets(buffer, BUFSIZE, stdin) == NULL) {
-                // Treat EOF like a termination command ("xx").
+            if (fgets(buffer, BUFSIZE, stdin) == NULL)
                 strcpy(buffer, "xx\n");
-            }
-
             int len_to_send = strlen(buffer);
             if (send(fd, buffer, len_to_send, 0) < 0) {
                 perror("client send");
                 close(fd);
                 exit(1);
             }
-
-            // Check for special commands.
             if (strcmp(buffer, "xx\n") == 0) {
                 fprintf(stderr, "You typed 'xx'. Closing connection.\n");
                 close(fd);
                 return;
-            }
-            else if (strcmp(buffer, "x\n") == 0) {
-                // Yield.
+            } else if (strcmp(buffer, "x\n") == 0) {
                 break;
             }
         }
-
-        // ========== (2) CLIENT READS PHASE ==========
+        // Read phase
         fprintf(stderr, "Waiting for server response...\n");
         while (1) {
-            int n = recv(fd, buffer, BUFSIZE-1, 0);
+            int n = recv(fd, buffer, BUFSIZE - 1, 0);
             if (n < 0) {
                 perror("client recv");
                 close(fd);
                 exit(1);
             }
             if (n == 0) {
-                // Server closed the connection.
                 fprintf(stderr, "Server disconnected.\n");
                 close(fd);
                 return;
             }
-
-            buffer[n] = '\0';  // Null-terminate the received string.
+            buffer[n] = '\0';
             fprintf(stdout, "Server> %s", buffer);
-
             if (strcmp(buffer, "xx\n") == 0) {
                 fprintf(stderr, "Server sent 'xx'. Closing connection.\n");
                 close(fd);
                 return;
-            }
-            else if (strcmp(buffer, "x\n") == 0) {
-                // Server yielded.
+            } else if (strcmp(buffer, "x\n") == 0) {
                 break;
             }
         }
     }
-
-    // (H) Close the socket (normally never reached).
     close(fd);
 }

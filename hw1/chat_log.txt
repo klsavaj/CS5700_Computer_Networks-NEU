@@ -11,3 +11,20 @@
 [2025-02-01 14:16:20] Client> xx
 [2025-02-01 14:19:35] Client> hii there
 [2025-02-01 14:19:35] Server auto-reply: I got -> hii there
+[2025-02-01 15:30:17] Client> xx
+[2025-02-01 15:30:33] Client> hii 
+[2025-02-01 15:30:33] Server auto-reply: I got -> hii 
+[2025-02-01 15:30:38] Client> how are you?
+[2025-02-01 15:30:38] Server auto-reply: I got -> how are you?
+[2025-02-01 15:30:42] Client> /time
+[2025-02-01 15:30:42] Server auto-reply: Current time: 2025-02-01 15:30:42
+[2025-02-01 15:31:08] Client> x
+[2025-02-01 15:31:32] Server> you got you time
+[2025-02-01 15:31:35] Server> x
+[2025-02-01 15:31:47] Client> /quote
+[2025-02-01 15:31:47] Server auto-reply: Quote: "You miss 100%% of the shots you don't take." – Wayne Gretzky
+[2025-02-01 15:31:49] Client> x
+[2025-02-01 15:32:38] Server> x
+[2025-02-01 15:32:46] Client> /roll
+[2025-02-01 15:32:46] Server auto-reply: You rolled: 2
+[2025-02-01 15:32:47] Client> x
